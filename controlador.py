@@ -1,11 +1,10 @@
-#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Nov 23 10:37:41 2018
+Created on Mon Apr 20 16:44:57 2020
 
-@author: alexander
+@author: ASUS
 """
-from Modelo import Biosenal
+from modelo import Biosenal
 from interfaz import InterfazGrafico
 import sys
 from PyQt5.QtWidgets import QApplication
@@ -24,15 +23,20 @@ class Coordinador(object):
     def __init__(self,vista,biosenal):
         self.__mi_vista=vista
         self.__mi_biosenal=biosenal
-    def recibirDatosSenal(self,data):
-        self.__mi_biosenal.asignarDatos(data)
+        self.__mi_vista.show()
+        
+    #Función que recibe los datos
+    def recibirDatosSenal(self,data,key):
+        self.__mi_biosenal.asignarDatos(data,key)
+    #Entrega los datos al modelo
     def devolverDatosSenal(self,x_min,x_max):
         return self.__mi_biosenal.devolver_segmento(x_min,x_max)
+    
     def escalarSenal(self,x_min,x_max,escala):
         return self.__mi_biosenal.escalar_senal(x_min,x_max,escala)
-    
-    def calcularWavelet(self, senal):
-        return self.__mi_biosenal.calcularWavelet(senal)
-    
+    def escogercanal(self,n):
+        return self.escogercanal(n)
+    def filtrarSenal(self,senal,nivel,forma,umbral):
+        return self.__mi_biosenal.filtrar_senal(senal,nivel,forma,umbral);
 p=Principal()
 p.main()

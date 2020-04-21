@@ -19,6 +19,12 @@ get_ipython().run_line_magic('matplotlib', 'qt')
 
 #loading data
 mat_contents = sio.loadmat('dataset_senales.mat')
+
+
+#Variables
+
+
+
 #the data is loaded as a Python dictionary
 print("the loaded keys are: " + str(mat_contents.keys()));
 #in the current case the signal is stored in the data field
