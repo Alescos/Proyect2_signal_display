@@ -21,7 +21,7 @@ class Biosenal(object):
         self.__data=data
         self.__key=key
         self.__datos_key=np.squeeze(data[key])
-        self.__fs=fs
+        self.__fs=int(fs)
     def determinarTiempo(self):
         self.__tiempo=np.arange(0,len(self.__datos_key)/self.__fs,1/self.__fs)
         return self.__tiempo
@@ -46,12 +46,12 @@ class Biosenal(object):
         return welch
     def multitaper(self,frec1,frec2,W,T,P,num_seg):
         params = dict(fs = self.__fs, fspass=[frec1,frec2], tapers=[W,T,P], trialave = 1)
-        x= np.reshape(self.__datos_key.shape[0]/(self.__fs*num_seg))
-        datos=self.__datos_key
+        x= int(self.__datos_key.shape[0]/(self.__fs*num_seg))
+        datos=self.__data[self.__key]
         datos=datos[:self.__fs*num_seg*x]
-        data=np.reshape(datos,(self.__fs*num_seg,x),order='F')
+        print(datos)
+        data=np.reshape(datos,(self.__fs*num_seg, x),order='F')
         Pxx, f = mtspectrumc(data, params)
-        print("Estamos en modelo: " + Pxx)
         return f,Pxx
     def wavelet(self):
         pass

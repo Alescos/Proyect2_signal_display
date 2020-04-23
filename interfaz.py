@@ -121,7 +121,8 @@ class InterfazGrafico(QMainWindow):
         self.metodo_welch.clicked.connect(self.elegir_metodo)
         self.metodo_multitaper.clicked.connect(self.elegir_metodo)
         self.metodo_wavelet.clicked.connect(self.elegir_metodo)
-        self.cargar_welch.clicked.connect(self.elegir_metodo)
+        self.cargar_welch.clicked.connect(self.determinar_welch)
+        self.cargar_multi.clicked.connect(self.determinar_multi)
         self.cargar_tiempo.clicked.connect(self.graficar_tiempo)
 
         
@@ -179,14 +180,14 @@ class InterfazGrafico(QMainWindow):
         if self.metodo_welch.isChecked()==True:
             self.tipo_ventana.setEnabled(True)
             self.cargar_welch.setEnabled(True)
-            self.f,self.welch=self.determinar_welch()
-            self.__sc2.graficar_metodo(self.welch,self.f,self.frec1,self.frec2)
+            #self.f,self.welch=self.determinar_welch()
+            #self.__sc2.graficar_metodo(self.welch,self.f,self.frec1,self.frec2)
         
         elif self.metodo_multitaper.isChecked()==True:
-            self.cargar_multi.setEnabled(True)
             self.tipo_ventana.setEnabled(False)
-            self.f,self.multi=self.determinar_multi()
-            self.__sc2.graficar_metodo(self.multi,self.f,self.fre_m,self.fre_m2)
+            self.cargar_multi.setEnabled(True)
+            #self.f,self.multi=self.determinar_multi()
+            #self.__sc2.graficar_metodo(self.multi,self.f,self.fre_m,self.fre_m2)
 
         else:
             self.cargar_wavelet.setEnabled(True)
@@ -196,21 +197,24 @@ class InterfazGrafico(QMainWindow):
     def determinar_welch(self):
         ventana=self.tipo_ventana.currentText()
         longitud=float(self.longitud_ventana.text())
-        self.frec1=float(self.fmin1.text())
-        self.frec2=float(self.fmax1.text())
+        frec1=float(self.fmin1.text())
+        frec2=float(self.fmax1.text())
         solapamiento=float(self.solapamiento.text())
-        return self.__coordinador.period_welch(ventana,longitud,solapamiento)
+        f,welch=self.__coordinador.period_welch(ventana,longitud,solapamiento)
+        #return self.__coordinador.period_welch(ventana,longitud,solapamiento)
+        self.__sc2.graficar_metodo(welch,f,frec1,frec2)
     
     def determinar_multi(self):
-        T=self.longitud_ventana2.text()
-        W=self.ancho_ventana.text()
-        self.frec_1=self.fmin2.text()
-        self.frec_2=self.fmax2.text()
-        print(type(self.frec_1))
-        P=(self.integrador.text())
-        num_seg=self.num_segmentos.text()
-        return self.__coordinador.multitaper(self.frec_1,self.frec_2,W,T,P,num_seg)
-        
+        T=float(self.longitud_ventana2.text())
+        W=float(self.ancho_ventana.text())
+        frec1=float(self.fmin2.text())
+        frec2=float(self.fmax2.text())
+        print(type(frec1))
+        P=float(self.integrador.text())
+        num_seg=int(self.num_segmentos.text())
+        #return self.__coordinador.multitaper(self.frec_1,self.frec_2,W,T,P,num_seg)
+        f,multi=self.__coordinador.multitaper(frec1,frec2,W,T,P,num_seg)
+        self.__sc2.graficar_metodo(multi,f,frec1,frec2)
     
     def graficar_tiempo(self): 
         #'''
