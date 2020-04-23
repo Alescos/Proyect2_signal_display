@@ -26,14 +26,22 @@ class Coordinador(object):
         self.__mi_vista.show()
         
     #Función que recibe los datos
-    def recibirDatosSenal(self,data,key):
-        self.__mi_biosenal.asignarDatos(data,key)
+    def recibirDatosSenal(self,data,key,fs):
+        self.__mi_biosenal.asignarDatos(data,key,fs)
     #Entrega los datos al modelo
     def devolverDatosSenal(self,x_min,x_max):
-        return self.__mi_biosenal.devolver_segmento(x_min,x_max)
-    
+        datos = self.__mi_biosenal.devolver_segmento(x_min,x_max)
+        return datos    
     def escalarSenal(self,x_min,x_max,escala):
         return self.__mi_biosenal.escalar_senal(x_min,x_max,escala)
+    def period_welch(self,ventana,longitud,solapamiento):
+        return self.__mi_biosenal.period_welch(ventana,longitud,solapamiento)
+    def multitaper(self,frec1,frec2,W,T,P,num_seg):
+        print("Estamos en controlador")
+        return self.__mi_biosenal.multitaper(frec1,frec2,W,T,P,num_seg)
+    def determinarTiempo(self):
+        return self.__mi_biosenal.determinarTiempo()
+    
     def escogercanal(self,n):
         return self.escogercanal(n)
     def filtrarSenal(self,senal,nivel,forma,umbral):

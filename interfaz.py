@@ -46,21 +46,33 @@ class MyGraphCanvas(FigureCanvas):
         
         
     #hay que crear un metodo para graficar lo que quiera
-    def graficar_gatos(self,datos):
+    def graficar_gatos(self,datos,tiempo):
         #primero se necesita limpiar la grafica anterior
         self.axes.clear()
         #ingresamos los datos a graficar
-        self.axes.plot(datos)
+        if len(datos)<=len(tiempo):
+            self.axes.plot(tiempo[0:len(datos)],datos)
+        else: 
+            self.axes.plot(tiempo,datos[0:len(tiempo)])
         #y lo graficamos
         print("datos")
-        print(datos)
         #voy a graficar en un mismo plano varias senales que no quecden superpuestas cuando uso plot me pone las graficas en un mismo grafico
-        self.axes.plot(datos)
-        self.axes.set_xlabel("muestras")
+        #self.axes.plot(tiempo,datos)
+        self.axes.set_xlabel("tiempo")
         self.axes.set_ylabel("voltaje (uV)")
         #self.axes.set
         #ordenamos que dibuje
         self.axes.figure.canvas.draw()
+        
+    def graficar_metodo(self,datos,f,fmin,fmax):
+        self.axes.clear()
+        self.axes.set_xlabel("Frcuencia")
+        self.axes.set_ylabel("Amplitud")
+        frec_min=float(fmin)
+        frec_max=float(fmax)
+        self.axes.plot(f[(f >= frec_min) & (f <= frec_max)],datos[(f >= frec_min) & (f <= frec_max)])
+        self.axes.figure.canvas.draw()
+        
 
        
         
@@ -74,6 +86,13 @@ class InterfazGrafico(QMainWindow):
         #se llama la rutina donde configuramos la interfaz
         self.setup()
     def setup(self):
+        self.solapamiento.setValidator(QIntValidator(0, 10000000))
+        self.longitud_ventana2.setValidator(QIntValidator(0, 10000000))
+        self.ancho_ventana.setValidator(QIntValidator(0, 10000000))
+        self.fmin2.setValidator(QIntValidator(0, 10000000))
+        self.fmax2.setValidator(QIntValidator(0, 10000000))
+        self.integrador.setValidator(QIntValidator(0, 10000000))
+        self.num_segmentos.setValidator(QIntValidator(0, 10000000))
         #los layout permiten organizar widgets en un contenedor
         #esta clase permite añadir widget uno encima del otro (vertical)
         layout = QVBoxLayout()
@@ -99,6 +118,11 @@ class InterfazGrafico(QMainWindow):
         self.boton_aumentar.clicked.connect(self.aumentar_senal)
         self.boton_disminuir.clicked.connect(self.disminuir_senal)
         self.cargar_key.clicked.connect(self.ingreso_key)
+        self.metodo_welch.clicked.connect(self.elegir_metodo)
+        self.metodo_multitaper.clicked.connect(self.elegir_metodo)
+        self.metodo_wavelet.clicked.connect(self.elegir_metodo)
+        self.cargar_welch.clicked.connect(self.elegir_metodo)
+        self.cargar_tiempo.clicked.connect(self.graficar_tiempo)
 
         
         #Se deshabilitan los botones
@@ -109,11 +133,12 @@ class InterfazGrafico(QMainWindow):
         self.boton_aumentar.setEnabled(False)
         self.boton_disminuir.setEnabled(False)
         self.metodo_welch.setEnabled(False)
+        self.metodo_multitaper.setEnabled(False)
         self.tipo_ventana.setEnabled(False)
         self.cargar_welch.setEnabled(False)
         self.metodo_wavelet.setEnabled(False)
         self.cargar_wavelet.setEnabled(False)
-        self.campo_grafico2.setEnabled(False)
+        self.cargar_tiempo.setEnabled(False)
         
     
     def asignar_Controlador(self,controlador):
@@ -124,12 +149,15 @@ class InterfazGrafico(QMainWindow):
     def adelante_senal(self):
         self.__x_min=self.__x_min+2000
         self.__x_max=self.__x_max+2000
-        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max))
+        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max),self.tiempo)
         
     def ingreso_key(self):
         key=str(self.key_text.text())
-        self.__coordinador.recibirDatosSenal(self.__data,key)
-        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max))
+        fs=float(self.fmuestreo_text.text())
+        self.__coordinador.recibirDatosSenal(self.__data,key,fs)
+        tiempo=self.__coordinador.determinarTiempo()
+        datos = self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max)
+        self.__sc.graficar_gatos(datos,tiempo)
         
     def atrasar_senal(self):
         #que se salga de la rutina si no puede atrazar
@@ -137,17 +165,53 @@ class InterfazGrafico(QMainWindow):
             return
         self.__x_min=self.__x_min-2000
         self.__x_max=self.__x_max-2000
-        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max))
+        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max),self.tiempo)
         
     def aumentar_senal(self):
         #en realidad solo necesito limites cuando tengo que extraerlos, pero si los 
         #extraigo por fuera mi funcion de grafico puede leer los valores
-        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,2))
+        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,2),self.tiempo)
         
     def disminuir_senal(self):
-        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,0.5))
+        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,0.5),self.tiempo)
         
-                
+    def elegir_metodo(self):
+        if self.metodo_welch.isChecked()==True:
+            self.tipo_ventana.setEnabled(True)
+            self.cargar_welch.setEnabled(True)
+            self.f,self.welch=self.determinar_welch()
+            self.__sc2.graficar_metodo(self.welch,self.f,self.frec1,self.frec2)
+        
+        elif self.metodo_multitaper.isChecked()==True:
+            self.cargar_multi.setEnabled(True)
+            self.tipo_ventana.setEnabled(False)
+            self.f,self.multi=self.determinar_multi()
+            self.__sc2.graficar_metodo(self.multi,self.f,self.fre_m,self.fre_m2)
+
+        else:
+            self.cargar_wavelet.setEnabled(True)
+            #self.tipo_ventana
+            
+        
+    def determinar_welch(self):
+        ventana=self.tipo_ventana.currentText()
+        longitud=float(self.longitud_ventana.text())
+        self.frec1=float(self.fmin1.text())
+        self.frec2=float(self.fmax1.text())
+        solapamiento=float(self.solapamiento.text())
+        return self.__coordinador.period_welch(ventana,longitud,solapamiento)
+    
+    def determinar_multi(self):
+        T=self.longitud_ventana2.text()
+        W=self.ancho_ventana.text()
+        self.frec_1=self.fmin2.text()
+        self.frec_2=self.fmax2.text()
+        print(type(self.frec_1))
+        P=(self.integrador.text())
+        num_seg=self.num_segmentos.text()
+        return self.__coordinador.multitaper(self.frec_1,self.frec_2,W,T,P,num_seg)
+        
+    
     def graficar_tiempo(self): 
         #'''
        # Esta funcion permite obtener un segmento cualquiera de la se�al de entrada
@@ -175,6 +239,7 @@ class InterfazGrafico(QMainWindow):
             print(archivo_cargado)
             #la senal carga exitosamente entonces habilito los botones
             self.__data = sio.loadmat(archivo_cargado)
+            #volver continuos los datos
             ##data = data["data"]
             #volver continuos los datos
             ##sensores,puntos,ensayos=data.shape
@@ -190,11 +255,13 @@ class InterfazGrafico(QMainWindow):
             self.boton_aumentar.setEnabled(True)
             self.boton_disminuir.setEnabled(True)
             self.metodo_welch.setEnabled(True)
-            self.tipo_ventana.setEnabled(True)
+            self.metodo_multitaper.setEnabled(True)
             self.cargar_welch.setEnabled(True)
             self.metodo_wavelet.setEnabled(True)
             self.cargar_wavelet.setEnabled(True)
             self.campo_grafico2.setEnabled(True)
+            self.cargar_tiempo.setEnabled(True)
             
+        
 
         
