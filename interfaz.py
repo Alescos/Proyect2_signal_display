@@ -46,22 +46,17 @@ class MyGraphCanvas(FigureCanvas):
         
         
     #hay que crear un metodo para graficar lo que quiera
-    def graficar_gatos(self,datos,tiempo):
+    def graficar_gatos(self,datos):
         #primero se necesita limpiar la grafica anterior
         self.axes.clear()
         #ingresamos los datos a graficar
-        if len(datos)<=len(tiempo):
-            self.axes.plot(tiempo[0:len(datos)],datos)
-        else: 
-            self.axes.plot(tiempo,datos[0:len(tiempo)])
+        self.axes.plot(datos)
         #y lo graficamos
-        #voy a graficar en un mismo plano varias senales que no quecden superpuestas cuando uso plot me pone las graficas en un mismo grafico
-        #self.axes.plot(tiempo,datos)
         self.axes.set_xlabel("tiempo")
         self.axes.set_ylabel("voltaje (uV)")
-        #self.axes.set
         #ordenamos que dibuje
         self.axes.figure.canvas.draw()
+        
         
     def graficar_metodo(self,datos,f,fmin,fmax):
         self.axes.clear()
@@ -162,8 +157,7 @@ class InterfazGrafico(QMainWindow):
     def adelante_senal(self):
         self.__x_min=self.__x_min+2000
         self.__x_max=self.__x_max+2000
-        tiempo=self.__coordinador.determinarTiempo()
-        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max),tiempo)
+        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max))
         
         
         """
@@ -174,9 +168,8 @@ class InterfazGrafico(QMainWindow):
         key=str(self.key_text.text())
         fs=float(self.fmuestreo_text.text())
         self.__coordinador.recibirDatosSenal(self.__data,key,fs)
-        tiempo=self.__coordinador.determinarTiempo()
         datos = self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max)
-        self.__sc.graficar_gatos(datos,tiempo)
+        self.__sc.graficar_gatos(datos)
         
     def atrasar_senal(self):
         #que se salga de la rutina si no puede atrazar
@@ -184,18 +177,16 @@ class InterfazGrafico(QMainWindow):
             return
         self.__x_min=self.__x_min-2000
         self.__x_max=self.__x_max-2000
-        tiempo=self.__coordinador.determinarTiempo()
-        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max),tiempo)
+        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max))
         
     def aumentar_senal(self):
         #en realidad solo necesito limites cuando tengo que extraerlos, pero si los 
         #extraigo por fuera mi funcion de grafico puede leer los valores
-        tiempo=self.__coordinador.determinarTiempo()
-        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,2),tiempo)
+        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,2))
         
     def disminuir_senal(self):
         tiempo=self.__coordinador.determinarTiempo()
-        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,0.5),tiempo)
+        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,0.5))
         
         
         """
@@ -275,10 +266,11 @@ class InterfazGrafico(QMainWindow):
         
         time_min = int(self.tiempo_min.text())
         time_max = int(self.tiempo_max.text())
-        senal=self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max)
+        datos=self.__coordinador
         self.__x_min = time_min
         self.__x_max = time_max
-        #self.__sc.graficar_gatos(datos, tiempo)
+        senal=self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max)
+        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max))
         
     #Carga la senal 
     def cargar_senal(self):

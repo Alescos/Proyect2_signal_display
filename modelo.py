@@ -25,14 +25,16 @@ class Biosenal(object):
         self.__datos_key=self.__datos-np.mean(self.__datos)
         self.__fs=int(fs)
     def determinarTiempo(self):
-        self.__tiempo=np.arange(0,len(self.__datos_key)/self.__fs,1/self.__fs)
+        self.__tiempo=np.arange(0,len(self.__datos)/self.__fs,1/self.__fs)
         return self.__tiempo
+    def desplazarTiempo(self,x_min,x_max):
+        return self.__tiempo[x_min:x_max]
     def devolver_segmento(self,x_min,x_max):
         #prevengo errores logicos
         if x_min>=x_max:
             return None
         #cojo los valores que necesito en la biosenal
-        return self.__datos_key[x_min:x_max]
+        return self.__datos[x_min:x_max]
     
     def escalar_senal(self,x_min,x_max,escala):
         copia_datos=self.__datos_key[x_min:x_max].copy()

@@ -42,6 +42,8 @@ class Coordinador(object):
         return self.__mi_biosenal.wavelet(frec1,frec2)
     def determinarTiempo(self):
         return self.__mi_biosenal.determinarTiempo()
+    def devolverTiempo(self,x_min,x_max):
+        return self.__mi_biosenal.desplazarTiempo(x_min,x_max)
     
     def escogercanal(self,n):
         return self.escogercanal(n)
