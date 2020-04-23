@@ -73,6 +73,18 @@ class MyGraphCanvas(FigureCanvas):
         self.axes.plot(f[(f >= frec_min) & (f <= frec_max)],datos[(f >= frec_min) & (f <= frec_max)])
         self.axes.figure.canvas.draw()
         
+    def graficar_espectro(self,time, freqs, power,frec1,frec2):
+        #primero se necesita limpiar la grafica anterior
+        self.axes.clear()
+        #ingresamos los datos a graficar
+        self.axes.contourf(time,
+                 freqs[(freqs >= frec1) & (freqs <= frec2)],
+                 power[(freqs >= frec1) & (freqs <= frec2),:],
+                 20, # Especificar 20 divisiones en las escalas de color 
+                 extend='both')
+        #ordenamos que dibuje
+        self.axes.figure.canvas.draw()
+        
 
        
         
@@ -92,7 +104,6 @@ class InterfazGrafico(QMainWindow):
         self.fmin2.setValidator(QIntValidator(0, 10000000))
         self.fmax2.setValidator(QIntValidator(0, 10000000))
         self.integrador.setValidator(QIntValidator(0, 10000000))
-        self.num_segmentos.setValidator(QIntValidator(0, 10000000))
         #los layout permiten organizar widgets en un contenedor
         #esta clase permite añadir widget uno encima del otro (vertical)
         layout = QVBoxLayout()
@@ -124,6 +135,7 @@ class InterfazGrafico(QMainWindow):
         self.cargar_welch.clicked.connect(self.determinar_welch)
         self.cargar_multi.clicked.connect(self.determinar_multi)
         self.cargar_tiempo.clicked.connect(self.graficar_tiempo)
+        self.cargar_wavelet.clicked.connect(self.determinar_wavelet)
 
         
         #Se deshabilitan los botones
@@ -140,6 +152,7 @@ class InterfazGrafico(QMainWindow):
         self.metodo_wavelet.setEnabled(False)
         self.cargar_wavelet.setEnabled(False)
         self.cargar_tiempo.setEnabled(False)
+        self.num_seg.setEnabled(False)
         
     
     def asignar_Controlador(self,controlador):
@@ -150,7 +163,8 @@ class InterfazGrafico(QMainWindow):
     def adelante_senal(self):
         self.__x_min=self.__x_min+2000
         self.__x_max=self.__x_max+2000
-        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max),self.tiempo)
+        tiempo=self.__coordinador.determinarTiempo()
+        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max),tiempo)
         
     def ingreso_key(self):
         key=str(self.key_text.text())
@@ -166,34 +180,43 @@ class InterfazGrafico(QMainWindow):
             return
         self.__x_min=self.__x_min-2000
         self.__x_max=self.__x_max-2000
-        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max),self.tiempo)
+        tiempo=self.__coordinador.determinarTiempo()
+        self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max),tiempo)
         
     def aumentar_senal(self):
         #en realidad solo necesito limites cuando tengo que extraerlos, pero si los 
         #extraigo por fuera mi funcion de grafico puede leer los valores
-        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,2),self.tiempo)
+        tiempo=self.__coordinador.determinarTiempo()
+        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,2),tiempo)
         
     def disminuir_senal(self):
-        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,0.5),self.tiempo)
+        tiempo=self.__coordinador.determinarTiempo()
+        self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,0.5),tiempo)
         
     def elegir_metodo(self):
         if self.metodo_welch.isChecked()==True:
             self.tipo_ventana.setEnabled(True)
             self.cargar_welch.setEnabled(True)
-            #self.f,self.welch=self.determinar_welch()
-            #self.__sc2.graficar_metodo(self.welch,self.f,self.frec1,self.frec2)
+            self.num_seg.setEnabled(False)
+            self.cargar_multi.setEnabled(False)
+            self.cargar_wavelet.setEnabled(False)
         
         elif self.metodo_multitaper.isChecked()==True:
-            self.tipo_ventana.setEnabled(False)
+            self.num_seg.setEnabled(True)
             self.cargar_multi.setEnabled(True)
-            #self.f,self.multi=self.determinar_multi()
-            #self.__sc2.graficar_metodo(self.multi,self.f,self.fre_m,self.fre_m2)
+            self.tipo_ventana.setEnabled(False)
+            self.cargar_welch.setEnabled(False)
+            self.cargar_wavelet.setEnabled(False)
 
         else:
+            self.cargar_wavelet.setEnabled(False)
+            self.num_seg.setEnabled(False)
+            self.tipo_ventana.setEnabled(False)
+            self.cargar_welch.setEnabled(False)
+            self.cargar_multi.setEnabled(False)
+            self.num_seg.setEnabled(False)
             self.cargar_wavelet.setEnabled(True)
-            #self.tipo_ventana
             
-        
     def determinar_welch(self):
         ventana=self.tipo_ventana.currentText()
         longitud=float(self.longitud_ventana.text())
@@ -201,7 +224,6 @@ class InterfazGrafico(QMainWindow):
         frec2=float(self.fmax1.text())
         solapamiento=float(self.solapamiento.text())
         f,welch=self.__coordinador.period_welch(ventana,longitud,solapamiento)
-        #return self.__coordinador.period_welch(ventana,longitud,solapamiento)
         self.__sc2.graficar_metodo(welch,f,frec1,frec2)
     
     def determinar_multi(self):
@@ -211,10 +233,15 @@ class InterfazGrafico(QMainWindow):
         frec2=float(self.fmax2.text())
         print(type(frec1))
         P=float(self.integrador.text())
-        num_seg=int(self.num_segmentos.text())
-        #return self.__coordinador.multitaper(self.frec_1,self.frec_2,W,T,P,num_seg)
+        num_seg=int(self.num_seg.currentText())
         f,multi=self.__coordinador.multitaper(frec1,frec2,W,T,P,num_seg)
         self.__sc2.graficar_metodo(multi,f,frec1,frec2)
+        
+    def determinar_wavelet(self):
+        frec1=float(self.fmin3.text())
+        frec2=float(self.fmax3.text())
+        time, freqs, power=self.__coordinador.wavelet(frec1,frec2)
+        self.__sc2.graficar_espectro(time, freqs, power, frec1, frec2)
     
     def graficar_tiempo(self): 
         #'''
@@ -260,9 +287,7 @@ class InterfazGrafico(QMainWindow):
             self.boton_disminuir.setEnabled(True)
             self.metodo_welch.setEnabled(True)
             self.metodo_multitaper.setEnabled(True)
-            self.cargar_welch.setEnabled(True)
             self.metodo_wavelet.setEnabled(True)
-            self.cargar_wavelet.setEnabled(True)
             self.campo_grafico2.setEnabled(True)
             self.cargar_tiempo.setEnabled(True)
             

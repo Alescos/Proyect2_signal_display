@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt;
 import numpy as np;
 import scipy.signal as signal;
 from chronux.mtspectrumc import mtspectrumc
+import pywt #1.1.1
 class Biosenal(object):
     def __init__(self,data=None):
         if not data==None:
@@ -20,7 +21,8 @@ class Biosenal(object):
     def asignarDatos(self,data,key,fs):
         self.__data=data
         self.__key=key
-        self.__datos_key=np.squeeze(data[key])
+        self.__datos=np.squeeze(data[key])
+        self.__datos_key=self.__datos-np.mean(self.__datos)
         self.__fs=int(fs)
     def determinarTiempo(self):
         self.__tiempo=np.arange(0,len(self.__datos_key)/self.__fs,1/self.__fs)
@@ -46,12 +48,42 @@ class Biosenal(object):
         return welch
     def multitaper(self,frec1,frec2,W,T,P,num_seg):
         params = dict(fs = self.__fs, fspass=[frec1,frec2], tapers=[W,T,P], trialave = 1)
-        x= int(self.__datos_key.shape[0]/(self.__fs*num_seg))
-        datos=self.__data[self.__key]
+        datos=self.__datos
+        datos=datos-np.mean(datos)
+        print(datos)
+        x= int(datos.shape[0]/(self.__fs*num_seg))
         datos=datos[:self.__fs*num_seg*x]
         print(datos)
         data=np.reshape(datos,(self.__fs*num_seg, x),order='F')
         Pxx, f = mtspectrumc(data, params)
         return f,Pxx
-    def wavelet(self):
-        pass
+    def wavelet(self,frec1,frec2):
+        sampling_period =  1/self.__fs
+        Frequency_Band = [frec1, frec2] # Banda de frecuencia a analizar
+
+        # Métodos de obtener las escalas para el Complex Morlet Wavelet  
+        # Método 1:
+        # Determinar las frecuencias respectivas para una escalas definidas
+        scales = np.arange(1, 250)
+        frequencies = pywt.scale2frequency('cmor', scales)/sampling_period
+        # Extraer las escalas correspondientes a la banda de frecuencia a analizar
+        scales = scales[(frequencies >= Frequency_Band[0]) & (frequencies <= Frequency_Band[1])] 
+        
+        N = self.__datos_key.shape[0]
+        
+        #%%
+        # Obtener el tiempo correspondiente a una epoca de la señal (en segundos)
+        time_epoch = sampling_period*N
+
+        # Analizar una epoca de un montaje (con las escalas del método 1)
+        # Obtener el vector de tiempo adecuado para una epoca de un montaje de la señal
+        time = np.arange(0, time_epoch, sampling_period)
+        # Para la primera epoca del segundo montaje calcular la transformada continua de Wavelet, usando Complex Morlet Wavelet
+
+        [coef, freqs] = pywt.cwt(self.__datos_key, scales, 'cmor', sampling_period)
+        print(coef)
+        print(freqs)
+        # Calcular la potencia 
+        power = (np.abs(coef)) ** 2
+        
+        return time, freqs, power

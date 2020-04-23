@@ -37,8 +37,9 @@ class Coordinador(object):
     def period_welch(self,ventana,longitud,solapamiento):
         return self.__mi_biosenal.period_welch(ventana,longitud,solapamiento)
     def multitaper(self,frec1,frec2,W,T,P,num_seg):
-        print("Estamos en controlador")
         return self.__mi_biosenal.multitaper(frec1,frec2,W,T,P,num_seg)
+    def wavelet(self,frec1,frec2):
+        return self.__mi_biosenal.wavelet(frec1,frec2)
     def determinarTiempo(self):
         return self.__mi_biosenal.determinarTiempo()
     
