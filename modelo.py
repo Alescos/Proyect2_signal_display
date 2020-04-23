@@ -39,6 +39,12 @@ class Biosenal(object):
         return copia_datos*escala
     
     #analisis usando welch
+    """
+        Esta funcion halla el espectro de densidad de frecuencia de la senal
+        ingresada, recibe el tipo de ventana, la longitud de la ventana y el
+        nivel de solapamiento de la ventana. Entrega el espectro de densidad
+        de potencia
+    """
 
     def period_welch(self,ventana,longitud,solapamiento):
         #signal.welch(x, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None, 
@@ -46,17 +52,34 @@ class Biosenal(object):
         noverlap=longitud*(solapamiento/100)
         welch = signal.welch(self.__datos_key,self.__fs,ventana,longitud,noverlap,scaling='density')
         return welch
+    
+    """
+        Esta funcion halla el espectro de densidad de frecuencia usando el
+        metodo multitaper. Recibe los valores de longitud de la ventana en
+        segundos(T), la distancia en frecuencia entre las muestras (w), el
+        factor integrador con el que se calcula el numero de ventanas (p) con
+        la formula 2WT-P. Recibe tamien los valores del ancho de banda a
+        analizar. Entrega el espectro.
+    """
     def multitaper(self,frec1,frec2,W,T,P,num_seg):
         params = dict(fs = self.__fs, fspass=[frec1,frec2], tapers=[W,T,P], trialave = 1)
-        datos=self.__datos
+        x= int(self.__datos.shape[0]/(self.__fs*num_seg))
+        print(x)
+        datos=self.__data[self.__key]
         datos=datos-np.mean(datos)
-        print(datos)
-        x= int(datos.shape[0]/(self.__fs*num_seg))
-        datos=datos[:self.__fs*num_seg*x]
-        print(datos)
+        #print(datos)
+        datos=datos[:self.__fs*num_seg]
+        #print(datos)
         data=np.reshape(datos,(self.__fs*num_seg, x),order='F')
         Pxx, f = mtspectrumc(data, params)
         return f,Pxx
+    
+    
+    """
+        Esta función determina la potencia de la señal en tiempo-frecuencia
+        usando el método de wavelet. Recibe el ancho de banda en el cual se 
+        quiere realizar el analisis
+    """
     def wavelet(self,frec1,frec2):
         sampling_period =  1/self.__fs
         Frequency_Band = [frec1, frec2] # Banda de frecuencia a analizar
@@ -81,8 +104,6 @@ class Biosenal(object):
         # Para la primera epoca del segundo montaje calcular la transformada continua de Wavelet, usando Complex Morlet Wavelet
 
         [coef, freqs] = pywt.cwt(self.__datos_key, scales, 'cmor', sampling_period)
-        print(coef)
-        print(freqs)
         # Calcular la potencia 
         power = (np.abs(coef)) ** 2
         

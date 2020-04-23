@@ -55,7 +55,6 @@ class MyGraphCanvas(FigureCanvas):
         else: 
             self.axes.plot(tiempo,datos[0:len(tiempo)])
         #y lo graficamos
-        print("datos")
         #voy a graficar en un mismo plano varias senales que no quecden superpuestas cuando uso plot me pone las graficas en un mismo grafico
         #self.axes.plot(tiempo,datos)
         self.axes.set_xlabel("tiempo")
@@ -166,6 +165,11 @@ class InterfazGrafico(QMainWindow):
         tiempo=self.__coordinador.determinarTiempo()
         self.__sc.graficar_gatos(self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max),tiempo)
         
+        
+        """
+        Con esta funcion se elige la senal a graficar usando la clave del
+        diccionario que se ingresa al principio
+        """
     def ingreso_key(self):
         key=str(self.key_text.text())
         fs=float(self.fmuestreo_text.text())
@@ -193,6 +197,12 @@ class InterfazGrafico(QMainWindow):
         tiempo=self.__coordinador.determinarTiempo()
         self.__sc.graficar_gatos(self.__coordinador.escalarSenal(self.__x_min,self.__x_max,0.5),tiempo)
         
+        
+        """
+        Esta funcion permite activar los botones de los diferentes metodos
+        cuando se seleccione el metodo deseado, y desactivara los botones de
+        los otros metodos
+        """
     def elegir_metodo(self):
         if self.metodo_welch.isChecked()==True:
             self.tipo_ventana.setEnabled(True)
@@ -217,6 +227,10 @@ class InterfazGrafico(QMainWindow):
             self.num_seg.setEnabled(False)
             self.cargar_wavelet.setEnabled(True)
             
+    """
+        Esta funcion llama al metodo welch en model, halla el espectro de
+        la senal ingresada y lo grafica
+    """
     def determinar_welch(self):
         ventana=self.tipo_ventana.currentText()
         longitud=float(self.longitud_ventana.text())
@@ -226,6 +240,11 @@ class InterfazGrafico(QMainWindow):
         f,welch=self.__coordinador.period_welch(ventana,longitud,solapamiento)
         self.__sc2.graficar_metodo(welch,f,frec1,frec2)
     
+    """
+        Esta funcion llama al metodo multitaper en modelo, halla el espectro
+        con los parametros ingresados por el usuario, entrega el espectro y
+        lo grafica
+    """
     def determinar_multi(self):
         T=float(self.longitud_ventana2.text())
         W=float(self.ancho_ventana.text())
@@ -236,7 +255,12 @@ class InterfazGrafico(QMainWindow):
         num_seg=int(self.num_seg.currentText())
         f,multi=self.__coordinador.multitaper(frec1,frec2,W,T,P,num_seg)
         self.__sc2.graficar_metodo(multi,f,frec1,frec2)
-        
+    """
+        Esta funcion llama al metodo wavelet en modelo, halla la potencia de
+        la señal con los parametros ingresados por el usuario, entrega la
+        potencia, el tiempo y la frecuencia y grafica el espectro
+    """    
+           
     def determinar_wavelet(self):
         frec1=float(self.fmin3.text())
         frec2=float(self.fmax3.text())
@@ -251,15 +275,10 @@ class InterfazGrafico(QMainWindow):
         
         time_min = int(self.tiempo_min.text())
         time_max = int(self.tiempo_max.text())
-        
-        #canal = int(self.canal_filtro.text())
         senal=self.__coordinador.devolverDatosSenal(self.__x_min,self.__x_max)
-        #nivel = int(self.nivel_filtrado.currentIndex())
-        #forma = int(self.forma_filtrado.currentIndex())
-        #umbral = int(self.tipo_umbral.currentIndex())
-
         self.__x_min = time_min
         self.__x_max = time_max
+        #self.__sc.graficar_gatos(datos, tiempo)
         
     #Carga la senal 
     def cargar_senal(self):
@@ -270,11 +289,6 @@ class InterfazGrafico(QMainWindow):
             print(archivo_cargado)
             #la senal carga exitosamente entonces habilito los botones
             self.__data = sio.loadmat(archivo_cargado)
-            #volver continuos los datos
-            ##data = data["data"]
-            #volver continuos los datos
-            ##sensores,puntos,ensayos=data.shape
-            ##senal_continua=np.reshape(data,(sensores,puntos*ensayos),order="F")
             #el coordinador recibe y guarda la senal en su propio .py, por eso no 
             #necesito una variable que lo guarde en el .py interfaz
             self.__x_min=0
